@@ -46,6 +46,7 @@ func (a *Account) applyEvents(events []Event) {
 		case AccountDebitedEvent: a.balance -= event.amount
 		case AccountDebitedBecauseOfMoneyTransferEvent: a.balance -= event.amount
 		case AccountDebitFailedEvent: //do nothing
+		case AccountDebitBecauseOfMoneyTransferFailedEvent: //do nothing
 		default:
 			panic(fmt.Sprintf("Unknown event %#v", event))
 		}

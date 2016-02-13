@@ -73,6 +73,8 @@ type DebitMoneyTransferCommand struct {}
 
 type CompleteMoneyTransferCommand struct {}
 
+type FailMoneyTransferCommand struct {}
+
 
 func (t MoneyTransfer) processCommand(command Command) []Event {
 	switch comm := command.(type){
@@ -84,6 +86,9 @@ func (t MoneyTransfer) processCommand(command Command) []Event {
 	}
 	case CompleteMoneyTransferCommand: return []Event{
 		MoneyTransferCompletedEvent{},
+	}
+	case FailMoneyTransferCommand: return []Event{
+		MoneyTransferFailedDueToLackOfFundsEvent{},
 	}
 	default:
 		panic(fmt.Sprintf("Unknown command %#v", comm))
