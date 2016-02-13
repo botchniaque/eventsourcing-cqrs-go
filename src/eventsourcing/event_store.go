@@ -4,22 +4,23 @@ import (
 	"math"
 )
 
+type Guid string
 
 type EventStore interface {
-	Save(events []Event) string
-	Find(guid string) (events []Event, version int)
-	Update(guid string, version int, events []Event)
+	Save(events []Event) Guid
+	Find(guid Guid) (events []Event, version int)
+	Update(guid Guid, version int, events []Event)
 	GetEvents(offset int, batchSize int) []Event
 }
 
 //in-memory event store
 type MemEventStore struct {
-	store map[string][]Event
+	store map[Guid][]Event
 	events []Event
 }
 
-func (es *MemEventStore) Save(events []Event) string {
-	guid := uuid.NewV4().String()
+func (es *MemEventStore) Save(events []Event) Guid {
+	guid := NewGuid()
 	for _, event := range events {
 		event.addGuid(guid)
 	}
@@ -28,13 +29,13 @@ func (es *MemEventStore) Save(events []Event) string {
 	return guid
 }
 
-func (es *MemEventStore) Find(guid string) ([]Event, int) {
+func (es *MemEventStore) Find(guid Guid) ([]Event, int) {
 	events := es.store[guid]
 	return events, len(events)
 }
 
 // Update aggregate with events. Returns true if version did not match
-func (es *MemEventStore) Update(guid string, version int, events []Event) (err bool){
+func (es *MemEventStore) Update(guid Guid, version int, events []Event) (err bool){
 	changes := es.store[guid]
 	if len(changes) == version {
 		err = false
@@ -56,5 +57,9 @@ func (es *MemEventStore) GetEvents(offset int, batchSize int) []Event {
 
 // initializer for event store
 func NewStore() MemEventStore {
-	return MemEventStore{store:map[string][]Event{}, events:make([]Event, 0)}
+	return MemEventStore{store:map[Guid][]Event{}, events:make([]Event, 0)}
+}
+
+func NewGuid() Guid {
+	return Guid(uuid.NewV4().String())
 }

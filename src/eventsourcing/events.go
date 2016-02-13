@@ -2,35 +2,19 @@ package eventsourcing
 
 // Common interface for all events
 type Event interface {
-	addGuid(string)
-	Guid() string
+	addGuid(Guid)
+	Guid() Guid
 }
 
 // Base implementation for all events
 type BaseEvent struct {
 	Event
-	guid string
+	guid Guid
 }
 
-func (e *BaseEvent) addGuid(g string) {
+func (e *BaseEvent) addGuid(g Guid) {
 	e.guid = g
 }
-func (e *BaseEvent) Guid()string {
+func (e *BaseEvent) Guid() Guid {
 	return e.guid
-}
-
-type AccountOpenedEvent struct {
-	Event
-	initialBalance int
-}
-type AccountCreditedEvent struct {
-	Event
-	amount int
-}
-type AccountDebitedEvent struct {
-	Event
-	amount int
-}
-type AccountDebitFailedEvent struct {
-	Event
 }

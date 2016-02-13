@@ -1,7 +1,6 @@
 package eventsourcing
 import (
 	"testing"
-	"github.com/twinj/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -76,7 +75,7 @@ func TestUpdateEvent_WrongVersion(t *testing.T) {
 func TestUpdateEvent_UseAsSave(t *testing.T) {
 	var storeUT = NewStore()
 
-	guid := uuid.NewV4().String()
+	guid := NewGuid()
 	err := storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
