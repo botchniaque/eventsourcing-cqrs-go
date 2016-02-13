@@ -7,9 +7,8 @@ type Account struct {
 	guid Guid
 }
 
-func NewAccount() *Account {
-	acc := new(Account)
-//	acc.BaseAggregate = *acc
+func NewAccount(store EventStore) *Account {
+	acc := &Account{BaseAggregate:BaseAggregate{store:store}}
 	return acc
 }
 

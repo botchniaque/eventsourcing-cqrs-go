@@ -4,17 +4,22 @@ type Aggregate interface {
 //	restore(Guid, EventStore)
 	applyEvents([]Event)
 	processCommand(Command) []Event
+	setVersion(int)
 }
 
 type BaseAggregate struct {
 	Aggregate
+	store EventStore
 	version int
 }
 
+func (a *BaseAggregate) setVersion(ver int) {
+	a.version = ver
+}
+
 func restore(guid Guid, a Aggregate, store EventStore)  {
-	events, _ := store.Find(guid)
+	events, version := store.Find(guid)
 	a.applyEvents(events)
-//	a.version = version
-//	return a
+	a.setVersion(version)
 }
 

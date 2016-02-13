@@ -4,14 +4,14 @@ type Handler struct {
 	store EventStore
 }
 
-func (h *Handler) handleEvents(events []Event) {
+func (this *Handler) handleEvents(events []Event) {
 	for _, event := range events {
 		switch e := event.(type){
 		case MoneyTransferCreatedEvent:
-			acc := NewAccount()
-			restore(e.from, acc, h.store)
+			acc := NewAccount(this.store)
+			restore(e.from, acc, this.store)
 			newEvents := acc.processCommand(DebitAccountBecauseOfMoneyTransferCommand{amount:e.amount, from:e.from, to:e.to})
-			h.store.Update(acc.guid, acc.version, newEvents)
+			this.store.Update(acc.guid, acc.version, newEvents)
 		}
 	}
 }

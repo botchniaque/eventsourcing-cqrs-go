@@ -5,6 +5,7 @@ import (
 )
 
 func TestFullTransferWithHandler(t *testing.T) {
+	store := NewStore()
 	//create account with 100
 	acc1 := new(Account)
 	acc1.guid = NewGuid()
@@ -22,7 +23,6 @@ func TestFullTransferWithHandler(t *testing.T) {
 	mtCreated := trans.processCommand(CreateMoneyTransferCommand{from:fromAcc, to:toAcc, amount:67})
 
 	//mock handler logic
-	store := NewStore()
 	handler := Handler{store:store}
 	handler.handleEvents(mtCreated)
 	trans.applyEvents(mtCreated)
