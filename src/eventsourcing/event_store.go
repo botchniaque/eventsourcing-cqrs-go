@@ -4,31 +4,12 @@ import (
 	"math"
 )
 
-// Common interface for all events
-type Event interface {
-	addGuid(string)
-	Guid() string
-}
-
 
 type EventStore interface {
 	Save(events []Event) string
 	Find(guid string) (events []Event, version int)
 	Update(guid string, version int, events []Event)
 	GetEvents(offset int, batchSize int) []Event
-}
-
-// Base implementation for all events
-type BaseEvent struct {
-	Event
-	guid string
-}
-
-func (e *BaseEvent) addGuid(g string) {
-	e.guid = g
-}
-func (e *BaseEvent) Guid()string {
-	return e.guid
 }
 
 //in-memory event store
