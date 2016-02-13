@@ -1,13 +1,21 @@
-package eventsourcing
+package main
 import (
-	"fmt"
 	"github.com/twinj/uuid"
+	"math"
 )
 
 // Common interface for all events
 type Event interface {
 	addGuid(string)
 	Guid() string
+}
+
+
+type EventStore interface {
+	Save(events []Event) string
+	Find(guid string) (events []Event, version int)
+	Update(guid string, version int, events []Event)
+	GetEvents(offset int, batchSize int) []Event
 }
 
 // Base implementation for all events
@@ -23,14 +31,6 @@ func (e *BaseEvent) Guid()string {
 	return e.guid
 }
 
-
-type EventStore interface {
-	Save(events []Event) string
-	Find(guid string) (events []Event, version int)
-	Update(guid string, version int, events []Event)
-	GetEvents(offset int, batchSize int)
-}
-
 //in-memory event store
 type MemEventStore struct {
 	store map[string][]Event
@@ -40,21 +40,37 @@ type MemEventStore struct {
 func (es *MemEventStore) Save(events []Event) string {
 	guid := uuid.NewV4().String()
 	for _, event := range events {
-
 		event.addGuid(guid)
-		fmt.Printf("%#v\n", event)
-		fmt.Printf("%v\n", event.Guid())
 	}
 	es.events = append(es.events, events...)
 	es.store[guid] = events
-	fmt.Printf("%v\n", len(es.events))
-	fmt.Printf("%#v\n", es.store)
 	return guid
 }
 
 func (es *MemEventStore) Find(guid string) ([]Event, int) {
-	var events = es.store[guid]
+	events := es.store[guid]
 	return events, len(events)
+}
+
+// Update aggregate with events. Returns true if version did not match
+func (es *MemEventStore) Update(guid string, version int, events []Event) (err bool){
+	changes := es.store[guid]
+	if len(changes) == version {
+		err = false
+		for _, event := range events {
+			event.addGuid(guid)
+		}
+		es.events = append(es.events, events...)
+		es.store[guid] = append(changes, events...)
+	} else {
+		err = true
+	}
+	return err
+}
+
+func (es *MemEventStore) GetEvents(offset int, batchSize int) []Event {
+	until := int(math.Min(float64(offset + batchSize), float64(len(es.events))))
+	return es.events[offset:until]
 }
 
 // initializer for event store
