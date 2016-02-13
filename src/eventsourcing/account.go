@@ -2,51 +2,58 @@ package eventsourcing
 import "fmt"
 
 type Account struct {
+	BaseAggregate
 	balance int
 	guid Guid
 }
 
+func NewAccount() *Account {
+	acc := new(Account)
+//	acc.BaseAggregate = *acc
+	return acc
+}
+
 type AccountOpenedEvent struct {
-	Event
+	BaseEvent
 	initialBalance int
 }
 type AccountCreditedEvent struct {
-	Event
+	BaseEvent
 	amount int
 }
 type AccountDebitedEvent struct {
-	Event
+	BaseEvent
 	amount int
 }
 type AccountDebitFailedEvent struct {
-	Event
+	BaseEvent
 }
 
 type AccountDebitedBecauseOfMoneyTransferEvent struct {
-	Event
+	BaseEvent
 	from, to Guid
 	amount int
 }
 type AccountCreditedBecauseOfMoneyTransferEvent struct {
-	Event
+	BaseEvent
 	from, to Guid
 	amount int
 }
 
 type AccountDebitBecauseOfMoneyTransferFailedEvent struct {
-	Event
+	BaseEvent
 }
 
 func (a *Account) applyEvents(events []Event) {
 	for _, e := range events {
 		switch event := e.(type){
-		case AccountOpenedEvent: a.balance = event.initialBalance;
-		case AccountCreditedEvent: a.balance += event.amount
-		case AccountCreditedBecauseOfMoneyTransferEvent: a.balance += event.amount
-		case AccountDebitedEvent: a.balance -= event.amount
-		case AccountDebitedBecauseOfMoneyTransferEvent: a.balance -= event.amount
-		case AccountDebitFailedEvent: //do nothing
-		case AccountDebitBecauseOfMoneyTransferFailedEvent: //do nothing
+		case *AccountOpenedEvent: a.balance = event.initialBalance;
+		case *AccountCreditedEvent: a.balance += event.amount
+		case *AccountCreditedBecauseOfMoneyTransferEvent: a.balance += event.amount
+		case *AccountDebitedEvent: a.balance -= event.amount
+		case *AccountDebitedBecauseOfMoneyTransferEvent: a.balance -= event.amount
+		case *AccountDebitFailedEvent: //do nothing
+		case *AccountDebitBecauseOfMoneyTransferFailedEvent: //do nothing
 		default:
 			panic(fmt.Sprintf("Unknown event %#v", event))
 		}
@@ -81,22 +88,22 @@ type CreditAccountBecauseOfMoneyTransferCommand struct {
 func (a Account) processCommand(command Command) []Event {
 	switch c := command.(type){
 	case OpenAccountCommand:
-		return []Event{AccountOpenedEvent{initialBalance:c.initialBalance}}
+		return []Event{&AccountOpenedEvent{initialBalance:c.initialBalance}}
 	case DebitAccountCommand:
 		if a.balance < c.amount {
-			return []Event{AccountDebitFailedEvent{}}
+			return []Event{&AccountDebitFailedEvent{}}
 		} else {
-			return []Event{AccountDebitedEvent{amount:c.amount}}
+			return []Event{&AccountDebitedEvent{amount:c.amount}}
 		}
 	case CreditAccountCommand:
-		return []Event{AccountCreditedEvent{amount:c.amount}}
+		return []Event{&AccountCreditedEvent{amount:c.amount}}
 	case CreditAccountBecauseOfMoneyTransferCommand:
-		return []Event{AccountCreditedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}}
+		return []Event{&AccountCreditedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}}
 	case DebitAccountBecauseOfMoneyTransferCommand:
 		if a.balance < c.amount {
-			return []Event{AccountDebitBecauseOfMoneyTransferFailedEvent{}}
+			return []Event{&AccountDebitBecauseOfMoneyTransferFailedEvent{}}
 		} else {
-			return []Event{AccountDebitedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}}
+			return []Event{&AccountDebitedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}}
 		}
 	default:
 		panic(fmt.Sprintf("Unknown command %#v", c))

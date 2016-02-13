@@ -2,6 +2,7 @@ package eventsourcing
 import (
 	"github.com/twinj/uuid"
 	"math"
+	"fmt"
 )
 
 type Guid string
@@ -9,7 +10,7 @@ type Guid string
 type EventStore interface {
 	Save(events []Event) Guid
 	Find(guid Guid) (events []Event, version int)
-	Update(guid Guid, version int, events []Event)
+	Update(guid Guid, version int, events []Event) bool
 	GetEvents(offset int, batchSize int) []Event
 }
 
@@ -39,6 +40,7 @@ func (es *MemEventStore) Update(guid Guid, version int, events []Event) (err boo
 	changes := es.store[guid]
 	if len(changes) == version {
 		err = false
+		fmt.Printf("%#v", events)
 		for _, event := range events {
 			event.addGuid(guid)
 		}
@@ -56,8 +58,8 @@ func (es *MemEventStore) GetEvents(offset int, batchSize int) []Event {
 }
 
 // initializer for event store
-func NewStore() MemEventStore {
-	return MemEventStore{store:map[Guid][]Event{}, events:make([]Event, 0)}
+func NewStore() *MemEventStore {
+	return &MemEventStore{store:map[Guid][]Event{}, events:make([]Event, 0)}
 }
 
 func NewGuid() Guid {

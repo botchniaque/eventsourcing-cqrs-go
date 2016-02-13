@@ -65,7 +65,7 @@ func TestFullTransfer(t *testing.T) {
 	assert.Equal(t, trans.state, Created)
 
 	a1Debited := acc1.processCommand(DebitAccountBecauseOfMoneyTransferCommand{amount:67, from:fromAcc, to:toAcc})
-	assert.IsType(t, AccountDebitedBecauseOfMoneyTransferEvent{}, a1Debited[0])
+	assert.IsType(t, &AccountDebitedBecauseOfMoneyTransferEvent{}, a1Debited[0])
 	acc1.applyEvents(a1Debited)
 
 	trans.applyEvents(trans.processCommand(DebitMoneyTransferCommand{}))
@@ -104,7 +104,7 @@ func TestFullTransfer_Failed(t *testing.T) {
 	assert.Equal(t, trans.state, Created)
 
 	a1NotDebited := acc2.processCommand(DebitAccountBecauseOfMoneyTransferCommand{amount:67, from:fromAcc, to:toAcc})
-	assert.IsType(t, AccountDebitBecauseOfMoneyTransferFailedEvent{}, a1NotDebited[0])
+	assert.IsType(t, &AccountDebitBecauseOfMoneyTransferFailedEvent{}, a1NotDebited[0])
 	acc1.applyEvents(a1NotDebited)
 
 	trans.applyEvents(trans.processCommand(FailMoneyTransferCommand{}))
