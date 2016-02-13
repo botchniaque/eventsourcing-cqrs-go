@@ -1,4 +1,4 @@
-package main
+package eventsourcing
 import (
 	"testing"
 	"github.com/twinj/uuid"

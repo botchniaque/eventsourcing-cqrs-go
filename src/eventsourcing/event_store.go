@@ -1,4 +1,4 @@
-package main
+package eventsourcing
 import (
 	"github.com/twinj/uuid"
 	"math"
