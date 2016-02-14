@@ -3,8 +3,8 @@ import (
 	"sync"
 	"fmt"
 	"reflect"
-	"time"
 	"github.com/botchniaque/eventsourcing-cqrs-go/eventsourcing"
+	"time"
 )
 
 var store = eventsourcing.NewStore()
@@ -16,28 +16,32 @@ func main() {
 	as := eventsourcing.NewAccountService(store)
 	mt := eventsourcing.NewMoneyTransferService(store)
 
-	accChan := as.CommandChannel()
-	transChan := mt.CommandChannel()
-
-	go handler(accChan, transChan)
-	go as.CommandHandler()
-	go mt.CommandHandler()
+	go HandleEvents(as.CommandChannel(), mt.CommandChannel())
+	go as.HandleCommands()
+	go mt.HandleCommands()
 
 	acc1 := as.OpenAccount(100)
 	acc2 := as.OpenAccount(10)
 	mt.Transfer(10, acc1, acc2)
 
-	time.Sleep(time.Duration(1000000000))
-	for i, e := range store.GetEvents(0, 100) {
-		fmt.Printf("%v: %#v\n", i, e)
-
-	}
+	//wait and print
+	go func() {
+		time.Sleep(200*time.Millisecond)
+		printEvents(store.GetEvents(0, 100))
+		wg.Done()
+	}()
 
 	wg.Wait()
 
 }
 
-func handler(accComm chan<- eventsourcing.Command, transComm chan<- eventsourcing.Command)  {
+func printEvents(events []eventsourcing.Event) {
+	for i, e := range events {
+		fmt.Printf("%v: %#v\n", i, e)
+	}
+}
+
+func HandleEvents(accComm chan<- eventsourcing.Command, transComm chan<- eventsourcing.Command)  {
 	h := eventsourcing.Handler{Store:store, AccChan:accComm, TransChan:transComm}
 	eventChan := store.GetEventChan()
 	for {

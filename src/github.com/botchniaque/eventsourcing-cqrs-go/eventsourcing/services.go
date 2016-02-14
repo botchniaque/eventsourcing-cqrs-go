@@ -17,7 +17,7 @@ func NewAccountService(store EventStore) *AccountService{
 	return acc
 }
 
-func (a *AccountService) CommandHandler() {
+func (a *AccountService) HandleCommands() {
 	for {
 		c := <- a.commandChannel
 		fmt.Printf("Got command %v\n", reflect.TypeOf(c))
@@ -54,7 +54,7 @@ func NewMoneyTransferService(store EventStore) *MoneyTransferService{
 	return mt
 }
 
-func (a *MoneyTransferService) CommandHandler() {
+func (a *MoneyTransferService) HandleCommands() {
 	for {
 		c := <- a.commandChannel
 		fmt.Printf("Got command %v\n", reflect.TypeOf(c))
