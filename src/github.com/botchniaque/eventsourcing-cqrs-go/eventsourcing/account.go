@@ -7,40 +7,40 @@ type Account struct {
 	guid    Guid
 }
 
-func NewAccount(store EventStore) Account {
-	acc := Account{BaseAggregate:BaseAggregate{store:store}}
-	return acc
+func NewAccount() *Account {
+	acc := Account{}
+	return &acc
 }
 
 type AccountOpenedEvent struct {
-	BaseEvent
+	WithGuid
 	initialBalance int
 }
 type AccountCreditedEvent struct {
-	BaseEvent
+	WithGuid
 	amount int
 }
 type AccountDebitedEvent struct {
-	BaseEvent
+	WithGuid
 	amount int
 }
 type AccountDebitFailedEvent struct {
-	BaseEvent
+	WithGuid
 }
 
 type AccountDebitedBecauseOfMoneyTransferEvent struct {
-	BaseEvent
+	WithGuid
 	from, to Guid
 	amount int
 }
 type AccountCreditedBecauseOfMoneyTransferEvent struct {
-	BaseEvent
+	WithGuid
 	from, to Guid
 	amount int
 }
 
 type AccountDebitBecauseOfMoneyTransferFailedEvent struct {
-	BaseEvent
+	WithGuid
 }
 
 func (a *Account) ApplyEvents(events []Event) {
@@ -61,55 +61,58 @@ func (a *Account) ApplyEvents(events []Event) {
 
 
 type DebitAccountCommand struct {
-	BaseCommand
+	WithGuid
 	Amount int
 }
 
 type CreditAccountCommand struct {
-	BaseCommand
+	WithGuid
 	Amount int
 }
 
 type OpenAccountCommand struct {
-	BaseCommand
+	WithGuid
 	InitialBalance int
 }
 
 type DebitAccountBecauseOfMoneyTransferCommand struct {
-	BaseCommand
+	WithGuid
 	amount int
 	from, to Guid
 	transaction int
 }
 
 type CreditAccountBecauseOfMoneyTransferCommand struct {
-	BaseCommand
+	WithGuid
 	amount int
 	from, to Guid
 	transaction int
 }
 
-func (a Account) ProcessCommand(command Command) []Event {
+func (a Account) ProcessCommand(command Guider) []Event {
+	var event Event
 	switch c := command.(type){
 	case *OpenAccountCommand:
-		return []Event{&AccountOpenedEvent{initialBalance:c.InitialBalance}}
+		event = &AccountOpenedEvent{initialBalance:c.InitialBalance}
 	case *DebitAccountCommand:
 		if a.Balance < c.Amount {
-			return []Event{&AccountDebitFailedEvent{}}
+			event = &AccountDebitFailedEvent{}
 		} else {
-			return []Event{&AccountDebitedEvent{amount:c.Amount}}
+			event = &AccountDebitedEvent{amount:c.Amount}
 		}
 	case *CreditAccountCommand:
-		return []Event{&AccountCreditedEvent{amount:c.Amount}}
+		event = &AccountCreditedEvent{amount:c.Amount}
 	case *CreditAccountBecauseOfMoneyTransferCommand:
-		return []Event{&AccountCreditedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}}
+		event = &AccountCreditedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}
 	case *DebitAccountBecauseOfMoneyTransferCommand:
 		if a.Balance < c.amount {
-			return []Event{&AccountDebitBecauseOfMoneyTransferFailedEvent{}}
+			event = &AccountDebitBecauseOfMoneyTransferFailedEvent{}
 		} else {
-			return []Event{&AccountDebitedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}}
+			event = &AccountDebitedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}
 		}
 	default:
 		panic(fmt.Sprintf("Unknown command %#v", c))
 	}
+	event.SetGuid(command.Guid())
+	return []Event{event}
 }

@@ -16,7 +16,7 @@ func TestAccountRestore(t *testing.T) {
 }
 
 func TestAccountCommand(t *testing.T) {
-	acc := NewAccount(NewStore())
+	acc := NewAccount()
 	e := acc.ProcessCommand(&OpenAccountCommand{InitialBalance: 100})
 	assert.Equal(t, []Event{&AccountOpenedEvent{initialBalance:100}}, e)
 }

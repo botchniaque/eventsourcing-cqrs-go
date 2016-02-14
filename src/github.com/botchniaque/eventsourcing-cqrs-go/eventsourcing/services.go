@@ -5,13 +5,13 @@ import (
 )
 
 type AccountService struct {
-	commandChannel chan Command
+	commandChannel chan Guider
 	store EventStore
 }
 
 func NewAccountService(store EventStore) *AccountService{
 	acc := &AccountService{
-		commandChannel:make(chan Command),
+		commandChannel:make(chan Guider),
 		store:store,
 	}
 	return acc
@@ -21,15 +21,15 @@ func (a *AccountService) HandleCommands() {
 	for {
 		c := <- a.commandChannel
 		fmt.Printf("Got command %v\n", reflect.TypeOf(c))
-		acc := NewAccount(a.store)
-		RestoreAggregate(c.Guid(), &acc, a.store)
+		acc := NewAccount()
+		RestoreAggregate(c.Guid(), acc, a.store)
 		fmt.Printf("Account %v balance %v\n", acc.Guid(), acc.Balance)
-		a.store.Save(acc.ProcessCommand(c))
+		a.store.Update(c.Guid(), acc.Version(), acc.ProcessCommand(c))
 
 	}
 }
 
-func (a AccountService) CommandChannel() chan<- Command {
+func (a AccountService) CommandChannel() chan<- Guider {
 	return a.commandChannel
 }
 
@@ -42,13 +42,13 @@ func (a AccountService) OpenAccount(balance int) Guid {
 }
 
 type MoneyTransferService struct {
-	commandChannel chan Command
+	commandChannel chan Guider
 	store EventStore
 }
 
 func NewMoneyTransferService(store EventStore) *MoneyTransferService{
 	mt := &MoneyTransferService{
-		commandChannel:make(chan Command),
+		commandChannel:make(chan Guider),
 		store:store,
 	}
 	return mt
@@ -60,7 +60,7 @@ func (a *MoneyTransferService) HandleCommands() {
 		fmt.Printf("Got command %v\n", reflect.TypeOf(c))
 		mt := new (MoneyTransfer)
 		RestoreAggregate(c.Guid(), mt, a.store)
-		a.store.Save(mt.ProcessCommand(c))
+		a.store.Update(c.Guid(), mt.Version(), mt.ProcessCommand(c))
 
 	}
 }
@@ -79,6 +79,6 @@ func (a MoneyTransferService) Transfer(amount int, from Guid, to Guid) Guid {
 	return guid
 }
 
-func (a MoneyTransferService) CommandChannel() chan<- Command {
+func (a MoneyTransferService) CommandChannel() chan<- Guider {
 	return a.commandChannel
 }

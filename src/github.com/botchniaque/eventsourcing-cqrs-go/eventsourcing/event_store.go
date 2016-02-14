@@ -1,15 +1,13 @@
 package eventsourcing
 import (
-	"github.com/twinj/uuid"
 	"math"
+	"errors"
+	"fmt"
 )
 
-type Guid string
-
 type EventStore interface {
-	Save(events []Event) Guid
 	Find(guid Guid) (events []Event, version int)
-	Update(guid Guid, version int, events []Event) bool
+	Update(guid Guid, version int, events []Event) error
 	GetEvents(offset int, batchSize int) []Event
 }
 
@@ -18,16 +16,6 @@ type MemEventStore struct {
 	store map[Guid][]Event
 	events []Event
 	eventChan chan Event
-}
-
-func (es *MemEventStore) Save(events []Event) Guid {
-	guid := NewGuid()
-//	for _, event := range events {
-//		event.addGuid(guid)
-//	}
-	es.appendEvents(events)
-	es.store[guid] = events
-	return guid
 }
 
 func (es *MemEventStore) Find(guid Guid) ([]Event, int) {
@@ -47,19 +35,23 @@ func (es *MemEventStore) appendEvents(events []Event) {
 }
 
 // Update aggregate with events. Returns true if version did not match
-func (es *MemEventStore) Update(guid Guid, version int, events []Event) (err bool){
-	changes := es.store[guid]
+func (es *MemEventStore) Update(guid Guid, version int, events []Event) error{
+	changes, ok := es.store[guid]
+	if !ok {
+		// initialize if not exists
+		changes = []Event{}
+	}
 	if len(changes) == version {
-		err = false
 		for _, event := range events {
-			event.addGuid(guid)
+			event.SetGuid(guid)
 		}
 		es.appendEvents(events)
 		es.store[guid] = append(changes, events...)
 	} else {
-		err = true
+		return errors.New(
+			fmt.Sprintf("Optimistic locking exeption - client has version %v, but store %v", version, len(changes)))
 	}
-	return err
+	return nil
 }
 
 func (es *MemEventStore) GetEvents(offset int, batchSize int) []Event {
@@ -74,8 +66,4 @@ func NewStore() *MemEventStore {
 		events:make([]Event, 0),
 		eventChan:make(chan Event, 100),
 	}
-}
-
-func NewGuid() Guid {
-	return Guid(uuid.NewV4().String())
 }

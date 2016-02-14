@@ -20,22 +20,22 @@ type MoneyTransfer struct {
 }
 
 type MoneyTransferCreatedEvent struct {
-	BaseEvent
+	WithGuid
 	from Guid
 	to Guid
 	amount int
 }
 
 type MoneyTransferDebitedEvent struct {
-	BaseEvent
+	WithGuid
 }
 
 type MoneyTransferCompletedEvent struct {
-	BaseEvent
+	WithGuid
 }
 
 type MoneyTransferFailedDueToLackOfFundsEvent struct {
-	BaseEvent
+	WithGuid
 }
 
 func (t *MoneyTransfer) ApplyEvents(events []Event) {
@@ -66,24 +66,24 @@ func (t *MoneyTransfer) ApplyEvents(events []Event) {
 }
 
 type CreateMoneyTransferCommand struct {
-	BaseCommand
+	WithGuid
 	From, To Guid
 	Amount   int
 }
 type DebitMoneyTransferCommand struct {
-	BaseCommand
+	WithGuid
 }
 
 type CompleteMoneyTransferCommand struct {
-	BaseCommand
+	WithGuid
 }
 
 type FailMoneyTransferCommand struct {
-	BaseCommand
+	WithGuid
 }
 
 
-func (t MoneyTransfer) ProcessCommand(command Command) []Event {
+func (t MoneyTransfer) ProcessCommand(command Guider) []Event {
 	switch comm := command.(type){
 	case *CreateMoneyTransferCommand: return []Event{
 		&MoneyTransferCreatedEvent{amount:comm.Amount, from:comm.From, to:comm.To},

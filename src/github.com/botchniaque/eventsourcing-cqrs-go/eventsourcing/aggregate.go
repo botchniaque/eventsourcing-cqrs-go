@@ -2,16 +2,15 @@ package eventsourcing
 import "fmt"
 
 type Aggregate interface {
+	Guider
 	ApplyEvents([]Event)
-	ProcessCommand(Command) []Event
+	ProcessCommand(Guider) []Event
 	setVersion(int)
 	Version() int
-	setGuid(Guid)
-	Guid() Guid
 }
 
 type BaseAggregate struct {
-	store EventStore
+	WithGuid
 	version int
 	guid Guid
 }
@@ -37,15 +36,6 @@ func RestoreAggregate(guid Guid, a Aggregate, store EventStore)  {
 	fmt.Printf("Restoring %v from events %v\n", guid, events)
 	a.ApplyEvents(events)
 	a.setVersion(version)
-	a.setGuid(guid)
+	a.SetGuid(guid)
 }
 
-func PersistResult(a Aggregate, c Command, s EventStore) Guid {
-	events := a.ProcessCommand(c)
-	if a.Guid() == "" {
-		return s.Save(events)
-	} else {
-		s.Update(a.Guid(), a.Version(), events)
-		return a.Guid()
-	}
-}

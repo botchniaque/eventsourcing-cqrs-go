@@ -7,27 +7,18 @@ import (
 //Example event used for testing
 type MyTestEvent struct {
 	value int
-	BaseEvent
+	WithGuid
 }
 
-
-func TestSaveEvent(t *testing.T)  {
-	var storeUT = NewStore()
-	var e1 = MyTestEvent{value:1}
-
-	storeUT.Save([]Event{&e1})
-
-	assert.Len(t, storeUT.events, 1)
-	assert.Len(t, storeUT.store, 1)
-}
 
 func TestFindEvent(t *testing.T) {
 	var storeUT = NewStore()
-	storeUT.Save([]Event{
+	storeUT.Update(NewGuid(), 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
 	})
-	var guid = storeUT.Save([]Event{
+	var guid = NewGuid()
+	storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:3},
 		&MyTestEvent{value:4},
 	})
@@ -41,7 +32,8 @@ func TestFindEvent(t *testing.T) {
 
 func TestUpdateEvent(t *testing.T) {
 	var storeUT = NewStore()
-	guid := storeUT.Save([]Event{
+	guid := NewGuid()
+	storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
 		&MyTestEvent{value:3},
@@ -51,7 +43,7 @@ func TestUpdateEvent(t *testing.T) {
 		&MyTestEvent{value:4},
 		&MyTestEvent{value:5},
 	})
-	assert.False(t, err)
+	assert.Nil(t, err)
 
 	e, v := storeUT.Find(guid);
 
@@ -62,14 +54,16 @@ func TestUpdateEvent(t *testing.T) {
 
 func TestUpdateEvent_WrongVersion(t *testing.T) {
 	var storeUT = NewStore()
-	guid := storeUT.Save([]Event{
+	guid := NewGuid()
+	storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
 		&MyTestEvent{value:3},
 	})
 
 	err := storeUT.Update(guid, 4, []Event{})
-	assert.True(t, err)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Optimistic locking")
 }
 
 func TestUpdateEvent_UseAsSave(t *testing.T) {
@@ -80,19 +74,21 @@ func TestUpdateEvent_UseAsSave(t *testing.T) {
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
 	})
-	assert.False(t, err)
+	assert.Nil(t, err)
 	e, _ := storeUT.Find(guid);
 	assert.Len(t, e, 2)
 }
 
 func TestFindEvents(t *testing.T) {
 	var storeUT = NewStore()
-	guid1 := storeUT.Save([]Event{
+	guid1 := NewGuid()
+	storeUT.Update(guid1, 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
 		&MyTestEvent{value:3},
 	})
-	guid2 := storeUT.Save([]Event{
+	guid2 := NewGuid()
+	storeUT.Update(guid2, 0, []Event{
 		&MyTestEvent{value:4},
 		&MyTestEvent{value:5},
 		&MyTestEvent{value:6},
