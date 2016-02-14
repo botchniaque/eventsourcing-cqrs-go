@@ -13,24 +13,19 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	accChan := make(chan eventsourcing.Command)
-	transChan := make(chan eventsourcing.Command)
+	as := eventsourcing.NewAccountService(store)
+	mt := eventsourcing.NewMoneyTransferService(store)
+
+	accChan := as.CommandChannel()
+	transChan := mt.CommandChannel()
 
 	go handler(accChan, transChan)
-	go AccoutCommandHandler(accChan)
-	go TransferCommandHandler(transChan)
+	go as.CommandHandler()
+	go mt.CommandHandler()
 
-	create1 := &eventsourcing.OpenAccountCommand{InitialBalance:100}
-	create1.SetGuid(eventsourcing.NewGuid())
-	accChan <- create1
-	create2 := &eventsourcing.OpenAccountCommand{InitialBalance:10}
-	create2.SetGuid(eventsourcing.NewGuid())
-	accChan <- create2
-	transChan <- &eventsourcing.CreateMoneyTransferCommand{
-				From:create1.Guid(),
-				To:create2.Guid(),
-				Amount:10,
-			}
+	acc1 := as.OpenAccount(100)
+	acc2 := as.OpenAccount(10)
+	mt.Transfer(10, acc1, acc2)
 
 	time.Sleep(time.Duration(1000000000))
 	for i, e := range store.GetEvents(0, 100) {
@@ -49,29 +44,6 @@ func handler(accComm chan<- eventsourcing.Command, transComm chan<- eventsourcin
 		event := <-eventChan
 		fmt.Printf("Got event %v\n", reflect.TypeOf(event))
 		h.HandleEvent(event)
-
-	}
-}
-
-func AccoutCommandHandler(commChan <-chan eventsourcing.Command) {
-	for {
-		c := <-commChan
-		fmt.Printf("Got command %v\n", reflect.TypeOf(c))
-		acc := eventsourcing.NewAccount(store)
-		eventsourcing.RestoreAggregate(c.Guid(), &acc, store)
-		fmt.Printf("Account %v balance %v\n", acc.Guid(), acc.Balance)
-		store.Save(acc.ProcessCommand(c))
-
-	}
-}
-
-func TransferCommandHandler(commChan <-chan eventsourcing.Command) {
-	for {
-		c := <-commChan
-		fmt.Printf("Got command %v\n", reflect.TypeOf(c))
-		t := new (eventsourcing.MoneyTransfer)
-		eventsourcing.RestoreAggregate(c.Guid(), t, store)
-		store.Save(t.ProcessCommand(c))
 
 	}
 }
