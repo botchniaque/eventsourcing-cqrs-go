@@ -1,10 +1,10 @@
 package main
 import (
-	"eventsourcing"
 	"sync"
 	"fmt"
 	"reflect"
 	"time"
+	"github.com/botchniaque/eventsourcing-cqrs-go/eventsourcing"
 )
 
 var store = eventsourcing.NewStore()
