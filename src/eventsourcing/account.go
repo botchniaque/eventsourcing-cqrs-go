@@ -3,12 +3,12 @@ import "fmt"
 
 type Account struct {
 	BaseAggregate
-	balance int
-	guid Guid
+	Balance int
+	guid    Guid
 }
 
-func NewAccount(store EventStore) *Account {
-	acc := &Account{BaseAggregate:BaseAggregate{store:store}}
+func NewAccount(store EventStore) Account {
+	acc := Account{BaseAggregate:BaseAggregate{store:store}}
 	return acc
 }
 
@@ -43,14 +43,14 @@ type AccountDebitBecauseOfMoneyTransferFailedEvent struct {
 	BaseEvent
 }
 
-func (a *Account) applyEvents(events []Event) {
+func (a *Account) ApplyEvents(events []Event) {
 	for _, e := range events {
 		switch event := e.(type){
-		case *AccountOpenedEvent: a.balance = event.initialBalance;
-		case *AccountCreditedEvent: a.balance += event.amount
-		case *AccountCreditedBecauseOfMoneyTransferEvent: a.balance += event.amount
-		case *AccountDebitedEvent: a.balance -= event.amount
-		case *AccountDebitedBecauseOfMoneyTransferEvent: a.balance -= event.amount
+		case *AccountOpenedEvent: a.Balance = event.initialBalance;
+		case *AccountCreditedEvent: a.Balance += event.amount
+		case *AccountCreditedBecauseOfMoneyTransferEvent: a.Balance += event.amount
+		case *AccountDebitedEvent: a.Balance -= event.amount
+		case *AccountDebitedBecauseOfMoneyTransferEvent: a.Balance -= event.amount
 		case *AccountDebitFailedEvent: //do nothing
 		case *AccountDebitBecauseOfMoneyTransferFailedEvent: //do nothing
 		default:
@@ -61,45 +61,50 @@ func (a *Account) applyEvents(events []Event) {
 
 
 type DebitAccountCommand struct {
-	amount int
+	BaseCommand
+	Amount int
 }
 
 type CreditAccountCommand struct {
-	amount int
+	BaseCommand
+	Amount int
 }
 
 type OpenAccountCommand struct {
-	initialBalance int
+	BaseCommand
+	InitialBalance int
 }
 
 type DebitAccountBecauseOfMoneyTransferCommand struct {
+	BaseCommand
 	amount int
 	from, to Guid
 	transaction int
 }
 
 type CreditAccountBecauseOfMoneyTransferCommand struct {
+	BaseCommand
 	amount int
 	from, to Guid
 	transaction int
 }
 
-func (a Account) processCommand(command Command) []Event {
+func (a Account) ProcessCommand(command Command) []Event {
 	switch c := command.(type){
-	case OpenAccountCommand:
-		return []Event{&AccountOpenedEvent{initialBalance:c.initialBalance}}
-	case DebitAccountCommand:
-		if a.balance < c.amount {
+	case *OpenAccountCommand:
+		return []Event{&AccountOpenedEvent{initialBalance:c.InitialBalance}}
+	case *DebitAccountCommand:
+		if a.Balance < c.Amount {
 			return []Event{&AccountDebitFailedEvent{}}
 		} else {
-			return []Event{&AccountDebitedEvent{amount:c.amount}}
+			return []Event{&AccountDebitedEvent{amount:c.Amount}}
 		}
-	case CreditAccountCommand:
-		return []Event{&AccountCreditedEvent{amount:c.amount}}
-	case CreditAccountBecauseOfMoneyTransferCommand:
+	case *CreditAccountCommand:
+		return []Event{&AccountCreditedEvent{amount:c.Amount}}
+	case *CreditAccountBecauseOfMoneyTransferCommand:
 		return []Event{&AccountCreditedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}}
-	case DebitAccountBecauseOfMoneyTransferCommand:
-		if a.balance < c.amount {
+	case *DebitAccountBecauseOfMoneyTransferCommand:
+		if a.Balance < c.amount {
 			return []Event{&AccountDebitBecauseOfMoneyTransferFailedEvent{}}
 		} else {
 			return []Event{&AccountDebitedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}}

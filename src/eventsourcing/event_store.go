@@ -2,7 +2,6 @@ package eventsourcing
 import (
 	"github.com/twinj/uuid"
 	"math"
-	"fmt"
 )
 
 type Guid string
@@ -18,14 +17,15 @@ type EventStore interface {
 type MemEventStore struct {
 	store map[Guid][]Event
 	events []Event
+	eventChan chan Event
 }
 
 func (es *MemEventStore) Save(events []Event) Guid {
 	guid := NewGuid()
-	for _, event := range events {
-		event.addGuid(guid)
-	}
-	es.events = append(es.events, events...)
+//	for _, event := range events {
+//		event.addGuid(guid)
+//	}
+	es.appendEvents(events)
 	es.store[guid] = events
 	return guid
 }
@@ -35,16 +35,26 @@ func (es *MemEventStore) Find(guid Guid) ([]Event, int) {
 	return events, len(events)
 }
 
+func (es *MemEventStore) GetEventChan() <-chan Event {
+	return es.eventChan
+}
+
+func (es *MemEventStore) appendEvents(events []Event) {
+	es.events = append(es.events, events...)
+	for _, e := range events {
+		es.eventChan <- e
+	}
+}
+
 // Update aggregate with events. Returns true if version did not match
 func (es *MemEventStore) Update(guid Guid, version int, events []Event) (err bool){
 	changes := es.store[guid]
 	if len(changes) == version {
 		err = false
-		fmt.Printf("%#v", events)
 		for _, event := range events {
 			event.addGuid(guid)
 		}
-		es.events = append(es.events, events...)
+		es.appendEvents(events)
 		es.store[guid] = append(changes, events...)
 	} else {
 		err = true
@@ -59,7 +69,11 @@ func (es *MemEventStore) GetEvents(offset int, batchSize int) []Event {
 
 // initializer for event store
 func NewStore() *MemEventStore {
-	return &MemEventStore{store:map[Guid][]Event{}, events:make([]Event, 0)}
+	return &MemEventStore{
+		store:map[Guid][]Event{},
+		events:make([]Event, 0),
+		eventChan:make(chan Event, 100),
+	}
 }
 
 func NewGuid() Guid {

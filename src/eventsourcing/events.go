@@ -8,7 +8,6 @@ type Event interface {
 
 // Base implementation for all events
 type BaseEvent struct {
-	Event
 	guid Guid
 }
 
