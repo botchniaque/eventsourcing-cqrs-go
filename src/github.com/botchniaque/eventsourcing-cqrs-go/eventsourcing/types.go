@@ -7,38 +7,25 @@ type Event interface {
 }
 
 // Base implementation for all events
-type WithGuid struct {
-	guid Guid
+type withGuid struct {
+	Guid guid
 }
 
-func (e *WithGuid) SetGuid(g Guid) {
-	e.guid = g
+func (e *withGuid) SetGuid(g guid) {
+	e.Guid = g
 }
-func (e *WithGuid) Guid() Guid {
-	return e.guid
+func (e *withGuid) GetGuid() guid {
+	return e.Guid
 }
 
-type Guid string
+type guid string
 
 
-func NewGuid() Guid {
-	return Guid(uuid.NewV4().String())
+func newGuid() guid {
+	return guid(uuid.NewV4().String())
 }
 
 type Guider interface {
-	Guid() Guid
-	SetGuid(Guid)
+	GetGuid() guid
+	SetGuid(guid)
 }
-
-// Base implementation for all events
-type BaseCommand struct {
-	guid Guid
-}
-
-func (e *BaseCommand) SetGuid(g Guid) {
-	e.guid = g
-}
-func (e *BaseCommand) Guid() Guid {
-	return e.guid
-}
-

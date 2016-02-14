@@ -1,56 +1,61 @@
 package eventsourcing
-import "fmt"
+import (
+	"fmt"
+	"gopkg.in/yaml.v2"
+)
 
 type Account struct {
-	BaseAggregate
+	baseAggregate
 	Balance int
-	guid    Guid
 }
 
 func NewAccount() *Account {
-	acc := Account{}
-	return &acc
+	return &Account{}
+}
+
+func (a Account) String() string {
+	yaml, _ := yaml.Marshal(&a)
+	return fmt.Sprintf("Account:\n%v", string(yaml))
 }
 
 type AccountOpenedEvent struct {
-	WithGuid
+	withGuid
 	initialBalance int
 }
 type AccountCreditedEvent struct {
-	WithGuid
+	withGuid
 	amount int
 }
 type AccountDebitedEvent struct {
-	WithGuid
+	withGuid
 	amount int
 }
 type AccountDebitFailedEvent struct {
-	WithGuid
+	withGuid
 }
 
 type AccountDebitedBecauseOfMoneyTransferEvent struct {
-	WithGuid
-	from, to Guid
-	amount int
+	withGuid
+	mTDetails
 }
 type AccountCreditedBecauseOfMoneyTransferEvent struct {
-	WithGuid
-	from, to Guid
-	amount int
+	withGuid
+	mTDetails
 }
 
 type AccountDebitBecauseOfMoneyTransferFailedEvent struct {
-	WithGuid
+	withGuid
+	mTDetails
 }
 
-func (a *Account) ApplyEvents(events []Event) {
+func (a *Account) applyEvents(events []Event) {
 	for _, e := range events {
 		switch event := e.(type){
 		case *AccountOpenedEvent: a.Balance = event.initialBalance;
 		case *AccountCreditedEvent: a.Balance += event.amount
-		case *AccountCreditedBecauseOfMoneyTransferEvent: a.Balance += event.amount
+		case *AccountCreditedBecauseOfMoneyTransferEvent: a.Balance += event.Amount
 		case *AccountDebitedEvent: a.Balance -= event.amount
-		case *AccountDebitedBecauseOfMoneyTransferEvent: a.Balance -= event.amount
+		case *AccountDebitedBecauseOfMoneyTransferEvent: a.Balance -= event.Amount
 		case *AccountDebitFailedEvent: //do nothing
 		case *AccountDebitBecauseOfMoneyTransferFailedEvent: //do nothing
 		default:
@@ -61,32 +66,28 @@ func (a *Account) ApplyEvents(events []Event) {
 
 
 type DebitAccountCommand struct {
-	WithGuid
+	withGuid
 	Amount int
 }
 
 type CreditAccountCommand struct {
-	WithGuid
+	withGuid
 	Amount int
 }
 
 type OpenAccountCommand struct {
-	WithGuid
+	withGuid
 	InitialBalance int
 }
 
 type DebitAccountBecauseOfMoneyTransferCommand struct {
-	WithGuid
-	amount int
-	from, to Guid
-	transaction int
+	withGuid
+	mTDetails
 }
 
 type CreditAccountBecauseOfMoneyTransferCommand struct {
-	WithGuid
-	amount int
-	from, to Guid
-	transaction int
+	withGuid
+	mTDetails
 }
 
 func (a Account) ProcessCommand(command Guider) []Event {
@@ -103,16 +104,22 @@ func (a Account) ProcessCommand(command Guider) []Event {
 	case *CreditAccountCommand:
 		event = &AccountCreditedEvent{amount:c.Amount}
 	case *CreditAccountBecauseOfMoneyTransferCommand:
-		event = &AccountCreditedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}
+		event = &AccountCreditedBecauseOfMoneyTransferEvent{mTDetails:c.mTDetails}
 	case *DebitAccountBecauseOfMoneyTransferCommand:
-		if a.Balance < c.amount {
-			event = &AccountDebitBecauseOfMoneyTransferFailedEvent{}
+		if a.Balance < c.Amount {
+			event = &AccountDebitBecauseOfMoneyTransferFailedEvent{mTDetails:c.mTDetails}
 		} else {
-			event = &AccountDebitedBecauseOfMoneyTransferEvent{amount:c.amount, from:c.from, to:c.to}
+			event = &AccountDebitedBecauseOfMoneyTransferEvent{mTDetails:c.mTDetails}
 		}
 	default:
 		panic(fmt.Sprintf("Unknown command %#v", c))
 	}
-	event.SetGuid(command.Guid())
+	event.SetGuid(command.GetGuid())
 	return []Event{event}
+}
+
+func RestoreAccount(guid guid, store EventStore) *Account {
+	a:= NewAccount()
+	RestoreAggregate(guid, a, store)
+	return a
 }

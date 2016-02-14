@@ -1,8 +1,4 @@
 package eventsourcing
-import (
-	"fmt"
-	"reflect"
-)
 
 type AccountService struct {
 	commandChannel chan Guider
@@ -20,11 +16,8 @@ func NewAccountService(store EventStore) *AccountService{
 func (a *AccountService) HandleCommands() {
 	for {
 		c := <- a.commandChannel
-		fmt.Printf("Got command %v\n", reflect.TypeOf(c))
-		acc := NewAccount()
-		RestoreAggregate(c.Guid(), acc, a.store)
-		fmt.Printf("Account %v balance %v\n", acc.Guid(), acc.Balance)
-		a.store.Update(c.Guid(), acc.Version(), acc.ProcessCommand(c))
+		acc := RestoreAccount(c.GetGuid(), a.store)
+		a.store.Update(c.GetGuid(), acc.Version, acc.ProcessCommand(c))
 
 	}
 }
@@ -33,9 +26,9 @@ func (a AccountService) CommandChannel() chan<- Guider {
 	return a.commandChannel
 }
 
-func (a AccountService) OpenAccount(balance int) Guid {
+func (a AccountService) OpenAccount(balance int) guid {
 	c := &OpenAccountCommand{InitialBalance:balance}
-	guid := NewGuid()
+	guid := newGuid()
 	c.SetGuid(guid)
 	a.commandChannel <- c
 	return guid
@@ -57,24 +50,23 @@ func NewMoneyTransferService(store EventStore) *MoneyTransferService{
 func (a *MoneyTransferService) HandleCommands() {
 	for {
 		c := <- a.commandChannel
-		fmt.Printf("Got command %v\n", reflect.TypeOf(c))
-		mt := new (MoneyTransfer)
-		RestoreAggregate(c.Guid(), mt, a.store)
-		a.store.Update(c.Guid(), mt.Version(), mt.ProcessCommand(c))
-
+		mt := RestoreMoneyTransfer(c.GetGuid(), a.store)
+		a.store.Update(c.GetGuid(), mt.Version, mt.ProcessCommand(c))
 	}
 }
 
 
-func (a MoneyTransferService) Transfer(amount int, from Guid, to Guid) Guid {
+func (a MoneyTransferService) Transfer(amount int, from guid, to guid) guid {
+	guid := newGuid()
 	c := &CreateMoneyTransferCommand{
-		From:from,
-		To:to,
-		Amount:amount,
+		mTDetails:mTDetails{
+			Amount:amount,
+			From:from,
+			To:to,
+			Transaction:guid,
+		},
+		withGuid:withGuid{Guid:guid},
 	}
-
-	guid := NewGuid()
-	c.SetGuid(guid)
 	a.commandChannel <- c
 	return guid
 }

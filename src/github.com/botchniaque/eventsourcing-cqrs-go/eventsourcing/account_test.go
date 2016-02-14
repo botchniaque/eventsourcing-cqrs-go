@@ -6,7 +6,7 @@ import (
 
 func TestAccountRestore(t *testing.T) {
 	acc := new(Account)
-	acc.ApplyEvents([]Event{
+	acc.applyEvents([]Event{
 		&AccountOpenedEvent{initialBalance:100},
 		&AccountCreditedEvent{amount:100},
 		&AccountDebitedEvent{amount:50},

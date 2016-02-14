@@ -8,8 +8,34 @@ type Handler struct {
 
 func (this *Handler) HandleEvent(event Event) {
 	switch e := event.(type){
+	// Account Commands
 	case *MoneyTransferCreatedEvent:
-		this.AccChan <- &DebitAccountBecauseOfMoneyTransferCommand{amount:e.amount, from:e.from, to:e.to, WithGuid:WithGuid{guid:e.from}}
+		this.AccChan <- &DebitAccountBecauseOfMoneyTransferCommand{
+			mTDetails:e.mTDetails,
+			withGuid:withGuid{Guid:e.From},
+		}
+	case *MoneyTransferDebitedEvent:
+		this.AccChan <- &CreditAccountBecauseOfMoneyTransferCommand{
+			mTDetails:e.mTDetails,
+			withGuid:withGuid{Guid:e.To},
+		}
+
+	// Money Transfer Commands
+	case *AccountDebitedBecauseOfMoneyTransferEvent:
+		this.TransChan <- &DebitMoneyTransferCommand{
+			mTDetails:e.mTDetails,
+			withGuid:withGuid{e.Transaction},
+		}
+	case *AccountDebitBecauseOfMoneyTransferFailedEvent:
+		this.TransChan <- &FailMoneyTransferCommand{
+			mTDetails:e.mTDetails,
+			withGuid:withGuid{e.Transaction},
+		}
+	case *AccountCreditedBecauseOfMoneyTransferEvent:
+		this.TransChan <- &CompleteMoneyTransferCommand{
+			mTDetails:e.mTDetails,
+			withGuid:withGuid{e.Transaction},
+		}
 	}
 
 }

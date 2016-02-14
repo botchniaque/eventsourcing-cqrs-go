@@ -6,19 +6,19 @@ import (
 )
 
 type EventStore interface {
-	Find(guid Guid) (events []Event, version int)
-	Update(guid Guid, version int, events []Event) error
+	Find(guid guid) (events []Event, version int)
+	Update(guid guid, version int, events []Event) error
 	GetEvents(offset int, batchSize int) []Event
 }
 
 //in-memory event store
 type MemEventStore struct {
-	store map[Guid][]Event
+	store map[guid][]Event
 	events []Event
 	eventChan chan Event
 }
 
-func (es *MemEventStore) Find(guid Guid) ([]Event, int) {
+func (es *MemEventStore) Find(guid guid) ([]Event, int) {
 	events := es.store[guid]
 	return events, len(events)
 }
@@ -35,7 +35,7 @@ func (es *MemEventStore) appendEvents(events []Event) {
 }
 
 // Update aggregate with events. Returns true if version did not match
-func (es *MemEventStore) Update(guid Guid, version int, events []Event) error{
+func (es *MemEventStore) Update(guid guid, version int, events []Event) error{
 	changes, ok := es.store[guid]
 	if !ok {
 		// initialize if not exists
@@ -62,7 +62,7 @@ func (es *MemEventStore) GetEvents(offset int, batchSize int) []Event {
 // initializer for event store
 func NewStore() *MemEventStore {
 	return &MemEventStore{
-		store:map[Guid][]Event{},
+		store:map[guid][]Event{},
 		events:make([]Event, 0),
 		eventChan:make(chan Event, 100),
 	}

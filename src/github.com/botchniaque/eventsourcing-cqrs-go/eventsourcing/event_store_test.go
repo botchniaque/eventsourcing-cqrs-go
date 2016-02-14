@@ -7,17 +7,17 @@ import (
 //Example event used for testing
 type MyTestEvent struct {
 	value int
-	WithGuid
+	withGuid
 }
 
 
 func TestFindEvent(t *testing.T) {
 	var storeUT = NewStore()
-	storeUT.Update(NewGuid(), 0, []Event{
+	storeUT.Update(newGuid(), 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
 	})
-	var guid = NewGuid()
+	var guid = newGuid()
 	storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:3},
 		&MyTestEvent{value:4},
@@ -32,7 +32,7 @@ func TestFindEvent(t *testing.T) {
 
 func TestUpdateEvent(t *testing.T) {
 	var storeUT = NewStore()
-	guid := NewGuid()
+	guid := newGuid()
 	storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
@@ -54,7 +54,7 @@ func TestUpdateEvent(t *testing.T) {
 
 func TestUpdateEvent_WrongVersion(t *testing.T) {
 	var storeUT = NewStore()
-	guid := NewGuid()
+	guid := newGuid()
 	storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
@@ -69,7 +69,7 @@ func TestUpdateEvent_WrongVersion(t *testing.T) {
 func TestUpdateEvent_UseAsSave(t *testing.T) {
 	var storeUT = NewStore()
 
-	guid := NewGuid()
+	guid := newGuid()
 	err := storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
@@ -81,13 +81,13 @@ func TestUpdateEvent_UseAsSave(t *testing.T) {
 
 func TestFindEvents(t *testing.T) {
 	var storeUT = NewStore()
-	guid1 := NewGuid()
+	guid1 := newGuid()
 	storeUT.Update(guid1, 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
 		&MyTestEvent{value:3},
 	})
-	guid2 := NewGuid()
+	guid2 := newGuid()
 	storeUT.Update(guid2, 0, []Event{
 		&MyTestEvent{value:4},
 		&MyTestEvent{value:5},

@@ -1,62 +1,71 @@
 package eventsourcing
-import "fmt"
+import (
+	"fmt"
+	"gopkg.in/yaml.v2"
+)
 
-type State int
+type State string
 
 const (
-	Created = State(iota)
-	Debited = State(iota)
-	Completed = State(iota)
-	Failed = State(iota)
+	Created = State("Created")
+	Debited = State("Debited")
+	Completed = State("Completed")
+	Failed = State("Failed")
 )
 
 type MoneyTransfer struct {
-	BaseAggregate
-	guid Guid
-	from Guid
-	to Guid
-	amount int
-	state State
+	baseAggregate
+	mTDetails
+	State State
+}
+
+type mTDetails struct {
+	From        guid
+	To          guid
+	Amount      int
+	Transaction guid
 }
 
 type MoneyTransferCreatedEvent struct {
-	WithGuid
-	from Guid
-	to Guid
-	amount int
+	withGuid
+	mTDetails
 }
 
 type MoneyTransferDebitedEvent struct {
-	WithGuid
+	withGuid
+	mTDetails
 }
 
 type MoneyTransferCompletedEvent struct {
-	WithGuid
+	withGuid
+	mTDetails
 }
 
 type MoneyTransferFailedDueToLackOfFundsEvent struct {
-	WithGuid
+	withGuid
+	mTDetails
 }
 
-func (t *MoneyTransfer) ApplyEvents(events []Event) {
+func (t *MoneyTransfer) applyEvents(events []Event) {
 	for _, e := range events {
 		switch event := e.(type){
 		case *MoneyTransferCreatedEvent:
-			t.amount = event.amount
-			t.from = event.from
-			t.to = event.to
-			t.state = Created
+			t.Amount = event.Amount
+			t.From = event.From
+			t.To = event.To
+			t.State = Created
+			t.Transaction = event.Transaction
 		case *MoneyTransferDebitedEvent:
-			if t.state == Created {
-				t.state = Debited
+			if t.State == Created {
+				t.State = Debited
 			}
 		case *MoneyTransferCompletedEvent:
-			if t.state == Debited {
-				t.state = Completed
+			if t.State == Debited {
+				t.State = Completed
 			}
 		case *MoneyTransferFailedDueToLackOfFundsEvent:
-			if t.state == Created {
-				t.state = Failed
+			if t.State == Created {
+				t.State = Failed
 			}
 
 		default:
@@ -66,38 +75,64 @@ func (t *MoneyTransfer) ApplyEvents(events []Event) {
 }
 
 type CreateMoneyTransferCommand struct {
-	WithGuid
-	From, To Guid
-	Amount   int
+	withGuid
+	mTDetails
 }
 type DebitMoneyTransferCommand struct {
-	WithGuid
+	withGuid
+	mTDetails
 }
 
 type CompleteMoneyTransferCommand struct {
-	WithGuid
+	withGuid
+	mTDetails
 }
 
 type FailMoneyTransferCommand struct {
-	WithGuid
+	withGuid
+	mTDetails
 }
 
 
+func (t MoneyTransfer) String() string {
+	yaml, _ := yaml.Marshal(&t)
+	return fmt.Sprintf("MoneyTransfer:\n%v", string(yaml))
+}
+
 func (t MoneyTransfer) ProcessCommand(command Guider) []Event {
-	switch comm := command.(type){
+	switch c := command.(type){
 	case *CreateMoneyTransferCommand: return []Event{
-		&MoneyTransferCreatedEvent{amount:comm.Amount, from:comm.From, to:comm.To},
+		&MoneyTransferCreatedEvent{
+			mTDetails:c.mTDetails,
+			withGuid:c.withGuid,
+		},
 	}
 	case *DebitMoneyTransferCommand: return []Event{
-		&MoneyTransferDebitedEvent{},
+		&MoneyTransferDebitedEvent{
+			mTDetails:c.mTDetails,
+			withGuid:c.withGuid,
+		},
 	}
 	case *CompleteMoneyTransferCommand: return []Event{
-		&MoneyTransferCompletedEvent{},
+		&MoneyTransferCompletedEvent{
+			mTDetails:c.mTDetails,
+			withGuid:c.withGuid,
+		},
 	}
 	case *FailMoneyTransferCommand: return []Event{
-		&MoneyTransferFailedDueToLackOfFundsEvent{},
+		&MoneyTransferFailedDueToLackOfFundsEvent{
+			mTDetails:c.mTDetails,
+			withGuid:c.withGuid,
+		},
 	}
 	default:
-		panic(fmt.Sprintf("Unknown command %#v", comm))
+		panic(fmt.Sprintf("Unknown command %#v", c))
 	}
+}
+
+
+func RestoreMoneyTransfer(guid guid, store EventStore) *MoneyTransfer {
+	t := new(MoneyTransfer)
+	RestoreAggregate(guid, t, store)
+	return t
 }
