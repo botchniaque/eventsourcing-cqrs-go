@@ -6,21 +6,25 @@ import (
 	"time"
 )
 
-var store = eventsourcing.NewStore()
 
 func main() {
+	var store = eventsourcing.NewInMemStore()
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
 	as := eventsourcing.NewAccountService(store)
 	mt := eventsourcing.NewMoneyTransferService(store)
+	eh := eventsourcing.NewEventHandler(store, as.CommandChannel(), mt.CommandChannel())
 
-	go HandleEvents(as.CommandChannel(), mt.CommandChannel())
+	go eh.HandleEvents()
 	go as.HandleCommands()
 	go mt.HandleCommands()
 
-	acc1 := as.OpenAccount(100)
-	acc2 := as.OpenAccount(10)
+	acc1 := as.OpenAccount(10) // acc1: balance=10
+	acc2 := as.OpenAccount(10) // acc2: balance=10
+	as.CreditAccount(acc1, 190) // acc1: balance=200
+	as.DebitAccount(acc1, 100) // acc1: balance=100
+	as.DebitAccount(acc2, 100) // Will fail -> no change
 	trans1 := mt.Transfer(10, acc1, acc2)
 	trans2 := mt.Transfer(100, acc2, acc1)
 
@@ -45,12 +49,3 @@ func printEvents(events []eventsourcing.Event) {
 	}
 }
 
-func HandleEvents(accComm chan<- eventsourcing.Guider, transComm chan<- eventsourcing.Guider)  {
-	h := eventsourcing.Handler{Store:store, AccChan:accComm, TransChan:transComm}
-	eventChan := store.GetEventChan()
-	for {
-		event := <-eventChan
-		h.HandleEvent(event)
-
-	}
-}

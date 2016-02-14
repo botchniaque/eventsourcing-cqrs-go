@@ -90,7 +90,7 @@ type CreditAccountBecauseOfMoneyTransferCommand struct {
 	mTDetails
 }
 
-func (a Account) ProcessCommand(command Guider) []Event {
+func (a Account) processCommand(command Command) []Event {
 	var event Event
 	switch c := command.(type){
 	case *OpenAccountCommand:

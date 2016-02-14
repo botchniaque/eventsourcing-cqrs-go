@@ -2,6 +2,11 @@ package eventsourcing
 import "github.com/twinj/uuid"
 
 // Common interface for all events
+type Command interface {
+	Guider
+}
+
+// Common interface for all events
 type Event interface {
 	Guider
 }

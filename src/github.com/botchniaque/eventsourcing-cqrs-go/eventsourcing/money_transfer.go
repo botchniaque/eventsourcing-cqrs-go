@@ -99,7 +99,7 @@ func (t MoneyTransfer) String() string {
 	return fmt.Sprintf("MoneyTransfer:\n%v", string(yaml))
 }
 
-func (t MoneyTransfer) ProcessCommand(command Guider) []Event {
+func (t MoneyTransfer) processCommand(command Command) []Event {
 	switch c := command.(type){
 	case *CreateMoneyTransferCommand: return []Event{
 		&MoneyTransferCreatedEvent{
@@ -132,7 +132,12 @@ func (t MoneyTransfer) ProcessCommand(command Guider) []Event {
 
 
 func RestoreMoneyTransfer(guid guid, store EventStore) *MoneyTransfer {
-	t := new(MoneyTransfer)
+	t := NewMoneyTransfer()
 	RestoreAggregate(guid, t, store)
 	return t
+}
+
+
+func NewMoneyTransfer() *MoneyTransfer {
+	return &MoneyTransfer{}
 }

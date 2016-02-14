@@ -1,14 +1,25 @@
 package eventsourcing
 
-type AccountService struct {
-	commandChannel chan Guider
+type Service struct {
+	commandChannel chan Command
 	store EventStore
+}
+
+
+func (a Service) CommandChannel() chan<- Command {
+	return a.commandChannel
+}
+
+type AccountService struct {
+	Service
 }
 
 func NewAccountService(store EventStore) *AccountService{
 	acc := &AccountService{
-		commandChannel:make(chan Guider),
-		store:store,
+		Service:Service{
+			commandChannel:make(chan Command),
+			store:store,
+		},
 	}
 	return acc
 }
@@ -17,32 +28,47 @@ func (a *AccountService) HandleCommands() {
 	for {
 		c := <- a.commandChannel
 		acc := RestoreAccount(c.GetGuid(), a.store)
-		a.store.Update(c.GetGuid(), acc.Version, acc.ProcessCommand(c))
+		a.store.Update(c.GetGuid(), acc.Version, acc.processCommand(c))
 
 	}
 }
 
-func (a AccountService) CommandChannel() chan<- Guider {
-	return a.commandChannel
-}
-
 func (a AccountService) OpenAccount(balance int) guid {
-	c := &OpenAccountCommand{InitialBalance:balance}
 	guid := newGuid()
-	c.SetGuid(guid)
+	c := &OpenAccountCommand{
+		InitialBalance:balance,
+		withGuid:withGuid{Guid:guid},
+	}
 	a.commandChannel <- c
 	return guid
 }
 
+func (a AccountService) CreditAccount(guid guid, amount int) {
+	c := &CreditAccountCommand{
+		Amount:amount,
+		withGuid:withGuid{Guid:guid},
+	}
+	a.commandChannel <- c
+}
+
+func (a AccountService) DebitAccount(guid guid, amount int) {
+	c := &DebitAccountCommand{
+		Amount:amount,
+		withGuid:withGuid{Guid:guid},
+	}
+	a.commandChannel <- c
+}
+
 type MoneyTransferService struct {
-	commandChannel chan Guider
-	store EventStore
+	Service
 }
 
 func NewMoneyTransferService(store EventStore) *MoneyTransferService{
 	mt := &MoneyTransferService{
-		commandChannel:make(chan Guider),
-		store:store,
+		Service:Service{
+			commandChannel:make(chan Command),
+			store:store,
+		},
 	}
 	return mt
 }
@@ -51,7 +77,7 @@ func (a *MoneyTransferService) HandleCommands() {
 	for {
 		c := <- a.commandChannel
 		mt := RestoreMoneyTransfer(c.GetGuid(), a.store)
-		a.store.Update(c.GetGuid(), mt.Version, mt.ProcessCommand(c))
+		a.store.Update(c.GetGuid(), mt.Version, mt.processCommand(c))
 	}
 }
 
@@ -69,8 +95,4 @@ func (a MoneyTransferService) Transfer(amount int, from guid, to guid) guid {
 	}
 	a.commandChannel <- c
 	return guid
-}
-
-func (a MoneyTransferService) CommandChannel() chan<- Guider {
-	return a.commandChannel
 }

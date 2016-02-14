@@ -12,7 +12,7 @@ type MyTestEvent struct {
 
 
 func TestFindEvent(t *testing.T) {
-	var storeUT = NewStore()
+	var storeUT = NewInMemStore()
 	storeUT.Update(newGuid(), 0, []Event{
 		&MyTestEvent{value:1},
 		&MyTestEvent{value:2},
@@ -31,7 +31,7 @@ func TestFindEvent(t *testing.T) {
 }
 
 func TestUpdateEvent(t *testing.T) {
-	var storeUT = NewStore()
+	var storeUT = NewInMemStore()
 	guid := newGuid()
 	storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:1},
@@ -53,7 +53,7 @@ func TestUpdateEvent(t *testing.T) {
 }
 
 func TestUpdateEvent_WrongVersion(t *testing.T) {
-	var storeUT = NewStore()
+	var storeUT = NewInMemStore()
 	guid := newGuid()
 	storeUT.Update(guid, 0, []Event{
 		&MyTestEvent{value:1},
@@ -67,7 +67,7 @@ func TestUpdateEvent_WrongVersion(t *testing.T) {
 }
 
 func TestUpdateEvent_UseAsSave(t *testing.T) {
-	var storeUT = NewStore()
+	var storeUT = NewInMemStore()
 
 	guid := newGuid()
 	err := storeUT.Update(guid, 0, []Event{
@@ -80,7 +80,7 @@ func TestUpdateEvent_UseAsSave(t *testing.T) {
 }
 
 func TestFindEvents(t *testing.T) {
-	var storeUT = NewStore()
+	var storeUT = NewInMemStore()
 	guid1 := newGuid()
 	storeUT.Update(guid1, 0, []Event{
 		&MyTestEvent{value:1},

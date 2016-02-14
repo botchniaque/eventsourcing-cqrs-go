@@ -60,7 +60,7 @@ func (es *MemEventStore) GetEvents(offset int, batchSize int) []Event {
 }
 
 // initializer for event store
-func NewStore() *MemEventStore {
+func NewInMemStore() *MemEventStore {
 	return &MemEventStore{
 		store:map[guid][]Event{},
 		events:make([]Event, 0),

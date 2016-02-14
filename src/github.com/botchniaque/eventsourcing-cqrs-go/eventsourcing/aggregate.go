@@ -3,9 +3,9 @@ package eventsourcing
 type Aggregate interface {
 	Guider
 	applyEvents([]Event)
-	ProcessCommand(Guider) []Event
+	processCommand(Command) []Event
 	setVersion(int)
-	GetVersion() int
+	getVersion() int
 	String() string
 }
 
@@ -18,7 +18,7 @@ func (a *baseAggregate) setVersion(ver int) {
 	a.Version = ver
 }
 
-func (a baseAggregate) GetVersion() int {
+func (a baseAggregate) getVersion() int {
 	return a.Version
 }
 

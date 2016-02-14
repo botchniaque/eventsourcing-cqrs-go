@@ -62,18 +62,18 @@ func TestFullTransfer(t *testing.T) {
 	//create account with 100
 	acc1 := new(Account)
 	acc1.Guid = newGuid()
-	acc1.applyEvents(acc1.ProcessCommand(&OpenAccountCommand{InitialBalance:100}))
+	acc1.applyEvents(acc1.processCommand(&OpenAccountCommand{InitialBalance:100}))
 
 	//create account with 10
 	acc2 := new(Account)
 	acc2.Guid = newGuid()
-	acc2.applyEvents(acc1.ProcessCommand(&OpenAccountCommand{InitialBalance:10}))
+	acc2.applyEvents(acc1.processCommand(&OpenAccountCommand{InitialBalance:10}))
 
 	//transfer 67 form 1 to 2
 	trans := new(MoneyTransfer)
 	fromAcc := acc1.Guid
 	toAcc := acc2.Guid
-	mtCreated := trans.ProcessCommand(&CreateMoneyTransferCommand{
+	mtCreated := trans.processCommand(&CreateMoneyTransferCommand{
 		mTDetails:mTDetails{
 			Amount:67,
 			To:toAcc,
@@ -84,7 +84,7 @@ func TestFullTransfer(t *testing.T) {
 	trans.applyEvents(mtCreated)
 	assert.Equal(t, trans.State, Created)
 
-	a1Debited := acc1.ProcessCommand(&DebitAccountBecauseOfMoneyTransferCommand{
+	a1Debited := acc1.processCommand(&DebitAccountBecauseOfMoneyTransferCommand{
 		mTDetails:mTDetails{
 			Amount:67,
 			To:toAcc,
@@ -93,9 +93,9 @@ func TestFullTransfer(t *testing.T) {
 	assert.IsType(t, &AccountDebitedBecauseOfMoneyTransferEvent{}, a1Debited[0])
 	acc1.applyEvents(a1Debited)
 
-	trans.applyEvents(trans.ProcessCommand(&DebitMoneyTransferCommand{}))
+	trans.applyEvents(trans.processCommand(&DebitMoneyTransferCommand{}))
 
-	a2Credit := acc2.ProcessCommand(&CreditAccountBecauseOfMoneyTransferCommand{
+	a2Credit := acc2.processCommand(&CreditAccountBecauseOfMoneyTransferCommand{
 		mTDetails:mTDetails{
 			Amount:67,
 			To:toAcc,
@@ -103,7 +103,7 @@ func TestFullTransfer(t *testing.T) {
 		}})
 	acc2.applyEvents(a2Credit)
 
-	trans.applyEvents(trans.ProcessCommand(&CompleteMoneyTransferCommand{}))
+	trans.applyEvents(trans.processCommand(&CompleteMoneyTransferCommand{}))
 
 	//assert final state
 	assert.Equal(t, 33, acc1.Balance)
@@ -116,18 +116,18 @@ func TestFullTransfer_Failed(t *testing.T) {
 	//create account with 100
 	acc1 := new(Account)
 	acc1.Guid = newGuid()
-	acc1.applyEvents(acc1.ProcessCommand(&OpenAccountCommand{InitialBalance:100}))
+	acc1.applyEvents(acc1.processCommand(&OpenAccountCommand{InitialBalance:100}))
 
 	//create account with 10
 	acc2 := new(Account)
 	acc2.Guid = newGuid()
-	acc2.applyEvents(acc1.ProcessCommand(&OpenAccountCommand{InitialBalance:10}))
+	acc2.applyEvents(acc1.processCommand(&OpenAccountCommand{InitialBalance:10}))
 
 	//transfer 67 form 2 to 1 (should fail)
 	trans := new(MoneyTransfer)
 	fromAcc := acc2.Guid
 	toAcc := acc1.Guid
-	mtCreated := trans.ProcessCommand(&CreateMoneyTransferCommand{
+	mtCreated := trans.processCommand(&CreateMoneyTransferCommand{
 		mTDetails:mTDetails{
 			Amount:67,
 			To:toAcc,
@@ -138,7 +138,7 @@ func TestFullTransfer_Failed(t *testing.T) {
 	trans.applyEvents(mtCreated)
 	assert.Equal(t, trans.State, Created)
 
-	a1NotDebited := acc2.ProcessCommand(&DebitAccountBecauseOfMoneyTransferCommand{
+	a1NotDebited := acc2.processCommand(&DebitAccountBecauseOfMoneyTransferCommand{
 		mTDetails:mTDetails{
 			Amount:67,
 			To:toAcc,
@@ -147,7 +147,7 @@ func TestFullTransfer_Failed(t *testing.T) {
 	assert.IsType(t, &AccountDebitBecauseOfMoneyTransferFailedEvent{}, a1NotDebited[0])
 	acc1.applyEvents(a1NotDebited)
 
-	trans.applyEvents(trans.ProcessCommand(&FailMoneyTransferCommand{}))
+	trans.applyEvents(trans.processCommand(&FailMoneyTransferCommand{}))
 
 	//assert final state
 	assert.Equal(t, 100, acc1.Balance)
