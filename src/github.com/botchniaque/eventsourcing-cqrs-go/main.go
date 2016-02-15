@@ -2,7 +2,7 @@ package main
 import (
 	"sync"
 	"fmt"
-	"eventsourcing"
+	"github.com/botchniaque/eventsourcing-cqrs-go/eventsourcing"
 	"time"
 )
 
