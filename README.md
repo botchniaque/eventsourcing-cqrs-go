@@ -7,10 +7,13 @@ originates from Chris Richardson's [presentation](http://www.infoq.com/presentat
 
 ## How to run
 
-    export GOPATH=.
-    go get -t github.com/botchniaque/eventsourcing-cqrs-go
+    git clone https://github.com/botchniaque/eventsourcing-cqrs-go.git
+    cd eventsourcing-cqrs-go/
+    export GOPATH=`pwd`
+    go get -t -v example eventsourcing
     go build example
     ./example
+
 
 to run tests
 
@@ -28,6 +31,7 @@ which then are persisted in the `Event Store`
 - Customer facing `Services` - expose usable functions to clients and produce commands
 as a product of interaction
 
+Sketched diagram:
 
      +---------------+                        +--------------+
      | Event Handler |                        |  Event Store |
@@ -64,6 +68,9 @@ as a product of interaction
  can subscribe to those events. In the example, for simplification,
  the `Persisted Events Channel` works as a single-subscriber `Message Bus` - since channels are
  first-class citizens in GO, this simplified a lot, but it's not enough for real-life implementations.
+
+ To implement a simple bus allowing multiple subscribes, a 'linked channel' idea could be implemented
+ as described [here](https://rogpeppe.wordpress.com/2009/12/01/concurrent-idioms-1-broadcasting-values-in-go-with-linked-channels/)
 
 #### Event (de)serialization
 Example uses simple map/slice implementation of `Event store`. For real-life implementations events would

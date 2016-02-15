@@ -13,12 +13,17 @@ const (
 	Failed = State("Failed")
 )
 
+// An aggregate implementation representing a Money Transfer
 type MoneyTransfer struct {
 	baseAggregate
 	mTDetails
 	State State
 }
 
+// Make sure it implements Aggregate
+var _ Aggregate = (*MoneyTransfer)(nil)
+
+// Details of money transfer
 type mTDetails struct {
 	From        guid
 	To          guid
@@ -26,26 +31,7 @@ type mTDetails struct {
 	Transaction guid
 }
 
-type MoneyTransferCreatedEvent struct {
-	withGuid
-	mTDetails
-}
-
-type MoneyTransferDebitedEvent struct {
-	withGuid
-	mTDetails
-}
-
-type MoneyTransferCompletedEvent struct {
-	withGuid
-	mTDetails
-}
-
-type MoneyTransferFailedDueToLackOfFundsEvent struct {
-	withGuid
-	mTDetails
-}
-
+// @see Aggregate.applyEvents
 func (t *MoneyTransfer) applyEvents(events []Event) {
 	for _, e := range events {
 		switch event := e.(type){
@@ -72,33 +58,11 @@ func (t *MoneyTransfer) applyEvents(events []Event) {
 			panic(fmt.Sprintf("Unknown event %#v", event))
 		}
 	}
+	t.Version = len(events)
+
 }
 
-type CreateMoneyTransferCommand struct {
-	withGuid
-	mTDetails
-}
-type DebitMoneyTransferCommand struct {
-	withGuid
-	mTDetails
-}
-
-type CompleteMoneyTransferCommand struct {
-	withGuid
-	mTDetails
-}
-
-type FailMoneyTransferCommand struct {
-	withGuid
-	mTDetails
-}
-
-
-func (t MoneyTransfer) String() string {
-	yaml, _ := yaml.Marshal(&t)
-	return fmt.Sprintf("MoneyTransfer:\n%v", string(yaml))
-}
-
+// @see Aggregate.processCommand
 func (t MoneyTransfer) processCommand(command Command) []Event {
 	switch c := command.(type){
 	case *CreateMoneyTransferCommand: return []Event{
@@ -130,14 +94,21 @@ func (t MoneyTransfer) processCommand(command Command) []Event {
 	}
 }
 
-
+// Helper function to restore money transfer according to persisted state in event store
 func RestoreMoneyTransfer(guid guid, store EventStore) *MoneyTransfer {
 	t := NewMoneyTransfer()
 	RestoreAggregate(guid, t, store)
 	return t
 }
 
-
+// Creator function for new money transfers in initial state
 func NewMoneyTransfer() *MoneyTransfer {
 	return &MoneyTransfer{}
+}
+
+
+// Pretty print in YAML
+func (t MoneyTransfer) String() string {
+	yaml, _ := yaml.Marshal(&t)
+	return fmt.Sprintf("MoneyTransfer:\n%v", string(yaml))
 }

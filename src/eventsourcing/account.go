@@ -4,50 +4,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// An aggregate implementation representing a bank account
 type Account struct {
 	baseAggregate
 	Balance int
 }
 
-func NewAccount() *Account {
-	return &Account{}
-}
+// Make sure it implements Aggregate
+var _ Aggregate = (*Account)(nil)
 
-func (a Account) String() string {
-	yaml, _ := yaml.Marshal(&a)
-	return fmt.Sprintf("Account:\n%v", string(yaml))
-}
-
-type AccountOpenedEvent struct {
-	withGuid
-	initialBalance int
-}
-type AccountCreditedEvent struct {
-	withGuid
-	amount int
-}
-type AccountDebitedEvent struct {
-	withGuid
-	amount int
-}
-type AccountDebitFailedEvent struct {
-	withGuid
-}
-
-type AccountDebitedBecauseOfMoneyTransferEvent struct {
-	withGuid
-	mTDetails
-}
-type AccountCreditedBecauseOfMoneyTransferEvent struct {
-	withGuid
-	mTDetails
-}
-
-type AccountDebitBecauseOfMoneyTransferFailedEvent struct {
-	withGuid
-	mTDetails
-}
-
+// @see Aggregate.applyEvents
 func (a *Account) applyEvents(events []Event) {
 	for _, e := range events {
 		switch event := e.(type){
@@ -62,34 +28,10 @@ func (a *Account) applyEvents(events []Event) {
 			panic(fmt.Sprintf("Unknown event %#v", event))
 		}
 	}
+	a.Version = len(events)
 }
 
-
-type DebitAccountCommand struct {
-	withGuid
-	Amount int
-}
-
-type CreditAccountCommand struct {
-	withGuid
-	Amount int
-}
-
-type OpenAccountCommand struct {
-	withGuid
-	InitialBalance int
-}
-
-type DebitAccountBecauseOfMoneyTransferCommand struct {
-	withGuid
-	mTDetails
-}
-
-type CreditAccountBecauseOfMoneyTransferCommand struct {
-	withGuid
-	mTDetails
-}
-
+// @see Aggregate.processCommand
 func (a Account) processCommand(command Command) []Event {
 	var event Event
 	switch c := command.(type){
@@ -118,8 +60,22 @@ func (a Account) processCommand(command Command) []Event {
 	return []Event{event}
 }
 
+
+// Helper function to restore account according to persisted state in event store
 func RestoreAccount(guid guid, store EventStore) *Account {
 	a:= NewAccount()
 	RestoreAggregate(guid, a, store)
 	return a
 }
+
+// create new account in an initial state
+func NewAccount() *Account {
+	return &Account{}
+}
+
+// pretty print in YAML
+func (a Account) String() string {
+	yaml, _ := yaml.Marshal(&a)
+	return fmt.Sprintf("Account:\n%v", string(yaml))
+}
+

@@ -1,39 +1,26 @@
 package eventsourcing
 
+// Common interface for all event-sourced aggregates
 type Aggregate interface {
 	Guider
+	// apply a list of events to restore actual state (core event sourcing)
 	applyEvents([]Event)
+
+	// Process a command according to own actual state (eg. debit account checks account.balance)
+	// Produce proper state-changing events
 	processCommand(Command) []Event
-	setVersion(int)
-	getVersion() int
-	String() string
 }
 
+// base implementation for all aggregates - with GUID and Version
 type baseAggregate struct {
 	withGuid
 	Version int
 }
 
-func (a *baseAggregate) setVersion(ver int) {
-	a.Version = ver
-}
-
-func (a baseAggregate) getVersion() int {
-	return a.Version
-}
-
-func (a *baseAggregate) setGuid(g guid) {
-	a.Guid = g
-}
-
-func (a baseAggregate) GetGuid() guid {
-	return a.Guid
-}
-
+// restores given empty aggregate from a state stored in event store
 func RestoreAggregate(guid guid, a Aggregate, store EventStore)  {
-	events, version := store.Find(guid)
+	events, _ := store.Find(guid)
 	a.applyEvents(events)
-	a.setVersion(version)
 	a.SetGuid(guid)
 }
 
