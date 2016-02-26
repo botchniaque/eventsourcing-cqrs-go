@@ -1,6 +1,6 @@
 # Eventsourcing CQRS example in GO
 
-Example event sourcing and CQRS implementation in [golang](golang.org)
+Example event sourcing and CQRS implementation in [golang](https://golang.org)
 
 Project is a re-implementation of [https://github.com/pinballjs/event-sourcing-cqrs] in GO. Initial inspiration
 originates from Chris Richardson's [presentation](http://www.infoq.com/presentations/event-microservice-scala-spring-boot)
